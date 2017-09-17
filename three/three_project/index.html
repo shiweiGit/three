@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>My Earth</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1">
+    <style>
+        body {
+            margin: 0px;
+            background-color: #000000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body onload="page_load()">
+
+    <script src="js/three.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/DeviceOrientationControls.js"></script>
+    <script>
+        function page_load() {
+            var app = new MyEarth();
+            app.init();
+        }
+
+        var scene, camera, controls, dcontrols, renderer, objects = [];
+        var IEarth;
+        var isDeviceing = 0; 
+        function MyEarth() {
+            IEarth = this;
+        }
+        MyEarth.prototype.init = function () {
+            renderer = new THREE.WebGLRenderer();//初始化webGL渲染器
+            renderer.setPixelRatio(window.devicePixelRatio);//防止在retina等屏幕上出现图像变形等显示问题
+            renderer.setSize(window.innerWidth, window.innerHeight);//设置大小
+            document.body.appendChild(renderer.domElement);//加入到页面中
+
+            scene = new THREE.Scene();//定义场景
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);//定义透视相机
+            if (this.isWeiXin()) {//微信-重力感应
+                dcontrols = new THREE.DeviceOrientationControls(camera);//陀螺仪
+
+            } else {
+                camera.position.x = 20;
+                controls = new THREE.OrbitControls(camera, renderer.domElement);//控制器
+            }
+            // 在场景中添加坐标轴标识
+            var axis = new THREE.AxisHelper(1);
+            scene.add(axis);
+            window.addEventListener('resize', onWindowResize, false);//适配
+            window.addEventListener('touchstart', touchStart, false);
+            window.addEventListener('touchmove', touchMove, false);
+            window.addEventListener('touchend', touchEnd, false);
+            animate();//动画
+            this.create();//创建
+        };
+        MyEarth.prototype.create = function () {
+            var texture = new THREE.TextureLoader().load('earth/earth4.jpg');//创建地图
+            var geometry = new THREE.SphereGeometry(6, 32, 32);//构建几何体
+            var material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 0.5, side: THREE.DoubleSide });//定义材质
+            mesh = new THREE.Mesh(geometry, material);
+ 			// var sphereMaterial= new THREE.MeshLambertMaterial({color:'#0392D6',wireframe: true});
+    // 		var sphere =new THREE.Mesh(  new THREE.SphereGeometry(radius,segemnt,rings),
+    //     	sphereMaterial);
+    //         scene.add(sphere); 
+            mesh.position.z = -15;//设置Z轴位置
+            //自转
+            mesh.animate = function () {
+                this.rotation.y += 0.001;
+            };
+            scene.add(mesh);//加入场景
+            objects.push(mesh);
+
+
+            //宇宙
+            var geometry = new THREE.SphereGeometry(100, 32, 32);
+            geometry.scale(-1, 1, 1);
+            var material = new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('earth/yuzhou.jpg')
+            });
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+        };
+        //判断是否微信登陆
+        MyEarth.prototype.isWeiXin = function () {
+            var ua = window.navigator.userAgent.toLowerCase();
+            console.log(ua);//mozilla/5.0 (iphone; cpu iphone os 9_1 like mac os x) applewebkit/601.1.46 (khtml, like gecko)version/9.0 mobile/13b143 safari/601.1
+            if (ua.match(/MicroMessenger/i) == 'micromessenger') {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        //适配
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        //动画
+        function animate() {
+            window.requestAnimationFrame(animate);//帧动画
+        
+            if (dcontrols) {
+                dcontrols.update();
+            }
+            if(controls){
+                controls.update();
+            }
+            for (var i in objects)
+            {
+                objects[i].animate();
+            }
+            renderer.render(scene, camera);
+        }
+
+        function touchStart(){
+            isDeviceing=1;
+            console.log('陀螺仪关闭');
+        }
+        function touchMove(){
+            mesh.rotation.y+=0.01;
+            animate();
+                  
+           
+        }        
+        function touchEnd(){
+            isDeviceing=0;
+            console.log('陀螺仪开启');
+        }        
+       
+    </script>
+</body>
+</html>
